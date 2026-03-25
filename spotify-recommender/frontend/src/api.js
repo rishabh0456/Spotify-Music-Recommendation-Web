@@ -6,7 +6,7 @@ const BASE_URL = import.meta.env.PROD
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 30000,
+  timeout: 100000,
 })
 
 // ─── Request interceptor ────────────────────────────

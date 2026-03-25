@@ -2,15 +2,26 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
-
+# 1. Pehle BASE_DIR define hoga
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# 2. Phir hum explicitly batayenge ki .env kahan rakhi hai
+env_path = os.path.join(BASE_DIR, '.env')
+load_dotenv(env_path)
+
+# 3. Yahan check karne ke liye print laga dete hain
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+print("=========================================")
+print(f"YOUTUBE KEY STATUS: {YOUTUBE_API_KEY}")
+print("=========================================")
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-changeme-later')
 
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+
+# ... (BAAKI TERA PURANA CODE WAISE KA WAISA RAHEGA) ...
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -97,3 +108,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Spotify API
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID', '')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET', '')
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')

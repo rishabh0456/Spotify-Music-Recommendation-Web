@@ -11,8 +11,10 @@ _feature_matrix = None
 # Genre groups — same region/language stays together
 GENRE_GROUPS = {
     # Indian
-    'indian': ['indian', 'bollywood', 'desi', 'hindi',
-               'punjabi', 'tamil', 'telugu', 'bhojpuri'],
+    'indian': [
+    'indian', 'bollywood', 'desi', 'hindi',
+    'punjabi', 'tamil', 'telugu', 'bhojpuri',
+    'indian-pop', 'filmi', 'devotional', 'ghazal', 'qawwali', 'sufi',],
     # East Asian
     'east-asian': ['cantopop', 'j-pop', 'j-idol', 'j-rock',
                    'k-pop', 'anime', 'mandopop', 'korean'],
@@ -73,12 +75,6 @@ def _load_model():
     return _df, _feature_matrix
 
 def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
-    """
-    Get smart recommendations:
-    - Same language/region songs first
-    - Flexible count (5-10) based on similarity threshold
-    - Optional AI prompt to refine results
-    """
     try:
         df, feature_matrix = _load_model()
 
@@ -105,9 +101,9 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
         input_genre = input_track.get('track_genre', 'Unknown')
         input_group = get_genre_group(input_genre)
 
-        print(f"🎵 Input track genre: {input_genre} → group: {input_group}")
+        print(f"🎵 Input: {track_name} | Genre: {input_genre} | Group: {input_group}")
 
-        # Compute similarity scores for this track only
+        # Compute similarity scores
         scores = cosine_similarity(
             [feature_matrix[track_idx]], feature_matrix
         )[0]
@@ -122,60 +118,77 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
         # Sort by similarity descending
         scored.sort(key=lambda x: x[1], reverse=True)
 
-        # ── Apply AI prompt filter ──────────────────────────
+        # Apply AI prompt filter
         if ai_prompt:
             scored = _apply_prompt_filter(df, scored, ai_prompt)
 
-        # ── Same region/language filter ─────────────────────
-        same_region = [
+        # ── STRICT Language/Region Filter ──────────────────
+        # Step 1: Exact same genre (strictest)
+        exact_genre = [
             (i, s) for i, s in scored
-            if get_genre_group(
-                df.iloc[i].get('track_genre', 'Unknown')
-            ) == input_group
+            if df.iloc[i].get('track_genre', '') == input_genre
         ]
 
-        # If not enough same-region results, allow cross-region
-        if len(same_region) < 5:
-            same_region = scored
-
-        # ── Flexible count based on threshold ───────────────
-        # Keep tracks with similarity > 0.7 (good match)
-        # Minimum 5, Maximum 10
-        THRESHOLD    = 0.70
-        MIN_RESULTS  = 5
-        MAX_RESULTS  = 10
-
-        strong_matches = [
-            (i, s) for i, s in same_region if s >= THRESHOLD
+        # Step 2: Same region group (fallback)
+        same_group = [
+            (i, s) for i, s in scored
+            if get_genre_group(df.iloc[i].get('track_genre', '')) == input_group
+            and df.iloc[i].get('track_genre', '') != input_genre
         ]
 
-        if len(strong_matches) >= MIN_RESULTS:
-            final = strong_matches[:MAX_RESULTS]
+        print(f"✅ Exact genre matches: {len(exact_genre)}")
+        print(f"✅ Same group matches: {len(same_group)}")
+
+        # Use exact genre first — never mix!
+        if len(exact_genre) >= 5:
+            filtered = exact_genre
+            print(f"🎯 Using EXACT genre: {input_genre}")
+        elif len(exact_genre) + len(same_group) >= 5:
+            filtered = exact_genre + same_group
+            print(f"🎯 Using exact + group: {input_group}")
         else:
-            # Not enough strong matches — lower threshold
-            final = same_region[:MIN_RESULTS]
+            # Very rare genre — use all but sort by group match first
+            filtered = [
+                (i, s + (0.2 if get_genre_group(
+                    df.iloc[i].get('track_genre', '')
+                ) == input_group else 0.0))
+                for i, s in scored
+            ]
+            filtered.sort(key=lambda x: x[1], reverse=True)
+            print(f"⚠️ Rare genre, boosting same group")
 
-        print(f"✅ Found {len(final)} recommendations "
-              f"(group: {input_group}, threshold: {THRESHOLD})")
+        # ── Flexible count ──────────────────────────────────
+        THRESHOLD   = 0.65
+        MIN_RESULTS = 5
+        MAX_RESULTS = 10
+
+        strong = [(i, s) for i, s in filtered if s >= THRESHOLD]
+
+        if len(strong) >= MIN_RESULTS:
+            final = strong[:MAX_RESULTS]
+        else:
+            final = filtered[:MIN_RESULTS]
+
+        print(f"✅ Final: {len(final)} recommendations")
 
         # Build result
         recommendations = []
         for idx, score in final:
             row = df.iloc[idx]
             recommendations.append({
-                'track_name':     row['track_name'],
-                'artists':        row['artists'],
-                'genre':          row.get('track_genre', 'Unknown'),
-                'energy':         round(float(row['energy']), 2),
-                'valence':        round(float(row['valence']), 2),
-                'danceability':   round(float(row['danceability']), 2),
-                'acousticness':   round(float(row['acousticness']), 2),
-                'tempo':          round(float(row['tempo']), 2),
-                'popularity':     int(row.get('popularity', 0)),
-                'similarity':     round(score * 100, 1),
-                'region_group':   get_genre_group(
-                                      row.get('track_genre', 'Unknown')
-                                  ),
+                'track_name':   row['track_name'],
+                'artists':      row['artists'],
+                'genre':        row.get('track_genre', 'Unknown'),
+                'energy':       round(float(row['energy']), 2),
+                'valence':      round(float(row['valence']), 2),
+                'danceability': round(float(row['danceability']), 2),
+                'acousticness': round(float(row['acousticness']), 2),
+                'tempo':        round(float(row['tempo']), 2),
+                'popularity':   int(row.get('popularity', 0)),
+                'similarity':   round(min(score, 1.0) * 100, 1),
+                'region_group': get_genre_group(
+                    row.get('track_genre', 'Unknown')
+                ),
             })
 
         return {

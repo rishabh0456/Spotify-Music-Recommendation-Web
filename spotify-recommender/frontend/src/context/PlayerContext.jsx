@@ -8,63 +8,88 @@ export function PlayerProvider({ children }) {
   const [progress,     setProgress]     = useState(0)
   const [volume,       setVolume]        = useState(0.7)
   const [duration,     setDuration]      = useState(0)
-  const audioRef = useRef(null)
+  const [playerType,   setPlayerType]    = useState(null) // 'audio' | 'youtube'
+  const audioRef  = useRef(null)
 
   // ── Load new track ──────────────────────────────────────
   useEffect(() => {
-    if (!currentTrack?.preview_url) return
+    if (!currentTrack) return
 
+    // Stop previous audio
     if (audioRef.current) {
       audioRef.current.pause()
+      audioRef.current = null
     }
 
-    audioRef.current         = new Audio(currentTrack.preview_url)
-    audioRef.current.volume  = volume
+    if (currentTrack.preview_url) {
+      // ── Spotify audio preview ──
+      setPlayerType('audio')
+      audioRef.current        = new Audio(currentTrack.preview_url)
+      audioRef.current.volume = volume
 
-    audioRef.current.addEventListener('loadedmetadata', () => {
-      setDuration(audioRef.current.duration)
-    })
-
-    audioRef.current.addEventListener('timeupdate', () => {
-      const pct = (audioRef.current.currentTime / audioRef.current.duration) * 100
-      setProgress(pct || 0)
-    })
-
-    audioRef.current.addEventListener('ended', () => {
-      setIsPlaying(false)
+      audioRef.current.addEventListener('loadedmetadata', () => {
+        setDuration(audioRef.current.duration)
+      })
+      audioRef.current.addEventListener('timeupdate', () => {
+        const pct = (audioRef.current.currentTime /
+                     audioRef.current.duration) * 100
+        setProgress(pct || 0)
+      })
+      audioRef.current.addEventListener('ended', () => {
+        setIsPlaying(false)
+        setProgress(0)
+      })
+      audioRef.current.play()
+      setIsPlaying(true)
       setProgress(0)
-    })
 
-    audioRef.current.play()
+    } else if (currentTrack.youtube_id) {
+    // YouTube — fake progress timer
+    setPlayerType('youtube')
     setIsPlaying(true)
     setProgress(0)
-
+    setDuration(210) // average song ~3.5 min
+  
+    // Start fake progress
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          setIsPlaying(false)
+          return 100
+        }
+        return prev + (100 / 210) // increment per second
+      })
+    }, 1000)
+  
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-      }
-    }
+      clearInterval(interval)
+      if (audioRef.current) audioRef.current.pause()
+    }}
   }, [currentTrack])
 
-  // ── Play / Pause ────────────────────────────────────────
   const togglePlay = () => {
-    if (!audioRef.current) return
-    if (isPlaying) {
-      audioRef.current.pause()
-    } else {
-      audioRef.current.play()
+    if (playerType === 'audio' && audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause()
+      } else {
+        audioRef.current.play()
+      }
+      setIsPlaying(!isPlaying)
+    } else if (playerType === 'youtube') {
+      // YouTube iframe handles its own play/pause
+      setIsPlaying(!isPlaying)
     }
-    setIsPlaying(!isPlaying)
   }
 
-  // ── Seek ────────────────────────────────────────────────
   const seek = (pct) => {
-    if (!audioRef.current) return
-    audioRef.current.currentTime = (pct / 100) * audioRef.current.duration
-    setProgress(pct)
+    if (playerType === 'audio' && audioRef.current) {
+      audioRef.current.currentTime =
+        (pct / 100) * audioRef.current.duration
+      setProgress(pct)
+    }
   }
 
-  // ── Volume ──────────────────────────────────────────────
   const changeVolume = (val) => {
     setVolume(val)
     if (audioRef.current) {
@@ -72,9 +97,8 @@ export function PlayerProvider({ children }) {
     }
   }
 
-  // ── Play a track ────────────────────────────────────────
   const playTrack = (track) => {
-    if (!track.preview_url) return
+    if (!track.preview_url && !track.youtube_id) return
     if (currentTrack?.track_name === track.track_name) {
       togglePlay()
     } else {
@@ -82,7 +106,6 @@ export function PlayerProvider({ children }) {
     }
   }
 
-  // ── Close player ────────────────────────────────────────
   const closePlayer = () => {
     if (audioRef.current) {
       audioRef.current.pause()
@@ -90,6 +113,7 @@ export function PlayerProvider({ children }) {
     setCurrentTrack(null)
     setIsPlaying(false)
     setProgress(0)
+    setPlayerType(null)
   }
 
   return (
@@ -99,6 +123,7 @@ export function PlayerProvider({ children }) {
       progress,
       volume,
       duration,
+      playerType,
       playTrack,
       togglePlay,
       seek,

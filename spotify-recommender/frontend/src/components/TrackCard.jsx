@@ -7,9 +7,12 @@ export default function TrackCard({ track, onRecommend, isInput = false }) {
   const isCurrentTrack = currentTrack?.track_name === track.track_name
   const isThisPlaying  = isCurrentTrack && isPlaying
 
+  // YAHAN FIX KIYA HAI: ab dono check honge (preview_url ya youtube_id)
+  const canPlay = track.preview_url || track.youtube_id
+
   const handlePlay = (e) => {
     e.stopPropagation()
-    if (!track.preview_url) return
+    if (!canPlay) return // Agar dono nahi hain tabhi rukega
     playTrack(track)
   }
 
@@ -34,7 +37,7 @@ export default function TrackCard({ track, onRecommend, isInput = false }) {
           </div>
         )}
 
-        {/* Play overlay */}
+        {/* Play overlay - YAHAN FIX KIYA HAI */}
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center">
           <button
             onClick={handlePlay}
@@ -45,9 +48,9 @@ export default function TrackCard({ track, onRecommend, isInput = false }) {
                 ? 'opacity-100 translate-y-0'
                 : 'opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0'
               }
-              ${!track.preview_url ? 'opacity-30 cursor-not-allowed' : ''}
+              ${!canPlay ? 'opacity-30 cursor-not-allowed' : ''}
             `}
-            title={track.preview_url ? 'Play preview' : 'No preview available'}
+            title={canPlay ? 'Play preview' : 'No preview available'}
           >
             {isThisPlaying
               ? <Pause size={18} className="text-black fill-black" />
@@ -89,7 +92,7 @@ export default function TrackCard({ track, onRecommend, isInput = false }) {
           {track.artists}
         </p>
 
-        {/* Audio feature bars (Great for showing the ML side of things!) */}
+        {/* Audio feature bars */}
         <div className="space-y-2 mb-3">
           {track.energy !== undefined && (
             <div className="flex items-center gap-2">
@@ -133,7 +136,7 @@ export default function TrackCard({ track, onRecommend, isInput = false }) {
         )}
       </div>
 
-      {/* Spotify external link - FIXED HERE */}
+      {/* Spotify external link */}
       {track.spotify_url && (
         <a 
           href={track.spotify_url}
@@ -147,4 +150,4 @@ export default function TrackCard({ track, onRecommend, isInput = false }) {
       )}
     </div>
   )
-}  // checking
+}
