@@ -43,3 +43,6 @@ npm run dev
 | GET | /api/search/?q= | Search tracks |
 | GET | /api/recommend/?track=&artist= | Get recommendations |
 | GET | /api/track/?track= | Get track details |
+
+## Handler
+Rishabh Jha
