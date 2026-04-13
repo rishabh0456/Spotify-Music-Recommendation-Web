@@ -22,9 +22,14 @@ export default function Navbar() {
             to="/"
             className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
           >
-            Home
+            Landing
           </Link>
-          
+          <Link
+            to="/app"
+            className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
+          >
+            Dashboard
+          </Link>
           <a
             href="https://open.spotify.com" 
             target="_blank"
