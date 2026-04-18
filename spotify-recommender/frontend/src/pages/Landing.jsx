@@ -22,26 +22,26 @@ export default function Landing() {
   const features = [
     {
       icon: Brain,
-      title: 'AI-Powered Intelligence',
-      description: 'Machine learning analyzes 81,000+ tracks to understand musical DNA and find your perfect match.',
+      title: 'Google Gemini NLP filtering',
+      description: 'Input any natural language prompt to refine and intelligently rank your recommendations using Google\'s generative AI models.',
       color: 'from-purple-500 to-pink-500'
     },
     {
       icon: Sparkles,
-      title: 'Instant Discovery',
-      description: 'Get personalized recommendations in milliseconds using advanced cosine similarity algorithms.',
+      title: 'Strict Cultural Isolation',
+      description: 'Enforces precise genre and regional mappings to guarantee completely distinct tracks without crossover leakage.',
       color: 'from-blue-500 to-cyan-500'
     },
     {
       icon: Music2,
-      title: 'Mood-Based Vibes',
-      description: 'Search by mood, energy, or vibe. Whether happy, energetic, or chill – we have the perfect playlist.',
+      title: 'ML-Powered Matrix',
+      description: 'Content-based filtering using cosine similarity perfectly mapped against an 81,000+ track dataset and 9 audio features.',
       color: 'from-green-500 to-emerald-500'
     },
     {
       icon: BarChart3,
-      title: 'Audio Feature Analysis',
-      description: 'Analyzes danceability, energy, valence, acousticness, and more to match your taste perfectly.',
+      title: 'Rapid Discovery',
+      description: 'Sub-30ms response times for instant media previews via combined YouTube API and Spotify integration.',
       color: 'from-orange-500 to-red-500'
     }
   ]
@@ -88,7 +88,7 @@ export default function Landing() {
     },
     {
       q: 'Can I refine my recommendations?',
-      a: 'Absolutely! You can use our AI prompt feature to customize recommendations based on specific moods or styles you\'re looking for.'
+      a: 'Absolutely! You can use our Google Gemini AI prompt feature to customize recommendations using natural language based on specific moods or styles.'
     },
     {
       q: 'How accurate are the recommendations?',
@@ -101,17 +101,6 @@ export default function Landing() {
       
       {/* ─── HERO SECTION ──────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center px-6 pt-24 pb-12 overflow-hidden">
-        
-        {/* Animated background gradient */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-green-500 opacity-10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 opacity-10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-blue-500 opacity-10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-        </div>
-
-        {/* Floating background shapes */}
-        <div className="absolute top-20 left-10 w-20 h-20 border border-green-500 rounded-3xl opacity-20 animate-float" />
-        <div className="absolute bottom-32 right-20 w-32 h-32 border-2 border-purple-500 rounded-full opacity-10 animate-float" style={{ animationDelay: '1s' }} />
 
         <div className="relative z-10 max-w-6xl mx-auto text-center">
           
@@ -228,23 +217,23 @@ export default function Landing() {
           {[
             {
               icon: Wand2,
-              title: 'Smart Search',
-              description: 'Find any track from our massive database instantly with fuzzy matching.'
+              title: 'Gemini NLP Filtering',
+              description: 'Use natural language to refine your music discovery effortlessly.'
             },
             {
               icon: Headphones,
-              title: 'Mood-Based Discovery',
-              description: 'Select a vibe and get recommendations tailored to your current mood.'
+              title: 'Region Isolation',
+              description: 'Strict genre mappings ensure perfectly relevant cultural recommendations.'
             },
             {
               icon: Zap,
-              title: 'Lightning Fast',
-              description: 'Get results in milliseconds using optimized ML algorithms.'
+              title: 'Sub-30ms Response',
+              description: 'Get interactive results fast with optimized ML architectures.'
             },
             {
               icon: Users,
-              title: 'Community Driven',
-              description: 'Built on public datasets and open-source technology everyone can trust.'
+              title: 'Rich Media Previews',
+              description: 'Natively integrated with Spotify and YouTube for immediate playback.'
             },
             {
               icon: TrendingUp,

@@ -103,8 +103,6 @@ export default function Home() {
 
       {/* ── Hero Section ─────────────────────────────────── */}
       <div className="relative pt-32 pb-16 px-6 text-center overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-green-500 opacity-5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Badge */}
         <div className="inline-flex items-center gap-2 bg-green-500 bg-opacity-10 border border-green-500 border-opacity-20 text-green-400 text-sm px-4 py-2 rounded-full mb-6">
@@ -128,7 +126,10 @@ export default function Home() {
         {/* ── AI Prompt Box ─────────────────────────────── */}
         <div className="mt-4 max-w-2xl mx-auto">
           <button
-            onClick={() => setShowPrompt(!showPrompt)}
+            onClick={() => {
+              setShowPrompt(!showPrompt)
+              if (showPrompt) setAiPrompt('')
+            }}
             className="flex items-center gap-2 text-gray-500 hover:text-green-400 text-sm mx-auto transition-colors"
           >
             <Bot size={14} />
@@ -139,7 +140,8 @@ export default function Home() {
             <div className="mt-3 relative">
               <textarea
                 value={aiPrompt}
-                onChange={e => setAiPrompt(e.target.value)}
+                onChange={e => setAiPrompt(e.target.value.slice(0, 100))}
+                maxLength={100}
                 placeholder="Tell the AI what you want... e.g. 'chill and romantic songs for late night'"
                 rows={2}
                 className="w-full bg-white bg-opacity-5 border border-gray-700 focus:border-green-500 text-white placeholder-gray-600 rounded-xl px-4 py-3 text-sm outline-none resize-none transition-colors"

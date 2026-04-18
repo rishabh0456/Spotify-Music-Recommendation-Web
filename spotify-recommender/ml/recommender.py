@@ -172,8 +172,14 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
 
         # Build result
         recommendations = []
+        seen_tracks = set()
         for idx, score in final:
             row = df.iloc[idx]
+            # Deduplicate by track_name only — artists strings can differ for same song
+            key = row['track_name'].lower().strip()
+            if key in seen_tracks:
+                continue
+            seen_tracks.add(key)
             recommendations.append({
                 'track_name':   row['track_name'],
                 'artists':      row['artists'],

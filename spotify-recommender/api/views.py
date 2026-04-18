@@ -8,6 +8,21 @@ from api.gemini_ai import filter_with_prompt
 from api.db import get_db
 
 
+def deduplicate_tracks(tracks):
+    """Remove duplicate tracks by track_name (case-insensitive).
+    Keying on name only because the same song can appear with slightly
+    different artist strings (different separators / ordering) in the dataset.
+    """
+    seen = set()
+    unique = []
+    for t in tracks:
+        key = t.get('track_name', '').lower().strip()
+        if key not in seen:
+            seen.add(key)
+            unique.append(t)
+    return unique
+
+
 def success_response(data, status_code=status.HTTP_200_OK):
     return Response({
         'success': True,
@@ -65,14 +80,16 @@ def search(request):
         if ai_prompt:
             results = filter_with_prompt(results, ai_prompt)
             results = results[:10]  # Cap back to 10
-            
+
+        results = deduplicate_tracks(results)
         enriched_results = enrich_recommendations(results)
+        enriched_results = deduplicate_tracks(enriched_results)
 
         return success_response({
-            'query':   query,
-            'count':   len(enriched_results),
+            'query':       query,
+            'count':       len(enriched_results),
             'total_count': total_count,
-            'results': enriched_results
+            'results':     enriched_results
         })
 
     except Exception as e:
@@ -120,6 +137,8 @@ def recommend(request):
                 track_name=track_name,
                 artist_name=artist_name
             )
+
+        recommendations = deduplicate_tracks(recommendations)
 
         try:
             db = get_db()

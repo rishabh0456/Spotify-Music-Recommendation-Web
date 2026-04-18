@@ -1,7 +1,10 @@
-import { Music2 } from 'lucide-react'
+import { Music2, Sun, Moon } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useTheme } from '../context/ThemeContext'
 
 export default function Navbar() {
+  const { isDark, toggle } = useTheme()
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black bg-opacity-95 backdrop-blur-sm border-b border-white border-opacity-10">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -16,8 +19,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Navigation Links */}
-        <div className="flex items-center gap-6">
+        {/* Navigation Links + Theme Toggle */}
+        <div className="flex items-center gap-4">
           <Link
             to="/"
             className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
@@ -38,6 +41,19 @@ export default function Navbar() {
           >
             Open Spotify
           </a>
+
+          {/* ── Theme Toggle ── */}
+          <button
+            onClick={toggle}
+            className="theme-toggle"
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Light mode' : 'Dark mode'}
+          >
+            {isDark
+              ? <Sun size={18} strokeWidth={1.8} />
+              : <Moon size={18} strokeWidth={1.8} />
+            }
+          </button>
         </div>
       </div>
     </nav>

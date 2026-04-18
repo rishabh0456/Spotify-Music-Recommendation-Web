@@ -12,11 +12,19 @@ FEATURE_COLUMNS = [
     'valence', 'tempo'
 ]
 
+# ── In-memory cache so load_data() reads CSV only once ──────────────────────
+_cached_df = None
+
+
 def load_data():
     """
     Load and clean the Spotify dataset.
-    Returns a cleaned DataFrame ready for ML.
+    Caches the result in memory so the CSV is only read once.
     """
+    global _cached_df
+    if _cached_df is not None:
+        return _cached_df
+
     try:
         df = pd.read_csv(DATA_PATH)
     except FileNotFoundError:
@@ -28,8 +36,12 @@ def load_data():
     # Drop rows with missing values in key columns
     df = df.dropna(subset=FEATURE_COLUMNS + ['track_name', 'artists'])
 
-    # Drop duplicate tracks
-    df = df.drop_duplicates(subset=['track_name', 'artists'])
+    # Deduplicate — use track_name only (case-insensitive) because the same
+    # song can appear multiple times with slightly different artist strings
+    # (different separators, different artist ordering, etc.)
+    df['_name_key'] = df['track_name'].str.lower().str.strip()
+    df = df.drop_duplicates(subset=['_name_key'])
+    df = df.drop(columns=['_name_key'])
 
     # Reset index after cleaning
     df = df.reset_index(drop=True)
@@ -43,6 +55,7 @@ def load_data():
                   (df['tempo'].max() - df['tempo'].min())
 
     print(f"[OK] Dataset loaded: {len(df)} tracks ready.")
+    _cached_df = df
     return df
 
 
@@ -64,13 +77,20 @@ def search_tracks(df, query, offset=0, limit=10):
         df['artists'].str.lower().str.contains(query, na=False)
     )
     matched = df[mask]
+
+    # Extra safety dedup — on track_name only
+    matched = matched.copy()
+    matched['_name_key'] = matched['track_name'].str.lower().str.strip()
+    matched = matched.drop_duplicates(subset=['_name_key']).drop(columns=['_name_key'])
+
     total_count = len(matched)
 
     # Paginate
     page = matched.iloc[offset:offset + limit]
 
     columns = ['track_name', 'artists', 'track_genre',
-               'energy', 'danceability', 'valence', 'popularity']
+               'energy', 'danceability', 'valence', 'popularity',
+               'acousticness', 'speechiness', 'instrumentalness', 'tempo']
     available = [c for c in columns if c in page.columns]
     results = page[available].copy()
 
