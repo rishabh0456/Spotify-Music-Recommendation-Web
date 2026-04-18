@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Music2, Sparkles, Zap, Bot } from 'lucide-react'
+import { Music2, Sparkles, Zap, Bot, ChevronDown, Loader2 } from 'lucide-react'
 import SearchBar from '../components/SearchBar'
 import MoodSelector from '../components/MoodSelector'
 import TrackCard from '../components/TrackCard'
@@ -16,6 +16,12 @@ export default function Home() {
   const [activeMode, setActiveMode]   = useState(null)
   const [aiPrompt, setAiPrompt]       = useState('')
   const [showPrompt, setShowPrompt]   = useState(false)
+
+  // ── Pagination state ─────────────────────────────────────
+  const [totalCount, setTotalCount]       = useState(0)
+  const [currentQuery, setCurrentQuery]   = useState('')
+  const [loadingMore, setLoadingMore]     = useState(false)
+
   const navigate = useNavigate()
 
   // ── Search handler ────────────────────────────────────────
@@ -23,25 +29,52 @@ export default function Home() {
     setLoading(true)
     setSearched(true)
     setActiveMode('search')
+    setCurrentQuery(query)
     try {
-      const data = await searchTracks(query)
+      const data = await searchTracks(query, 0, aiPrompt)
       setResults(data.results || [])
+      setTotalCount(data.total_count || 0)
       if ((data.results || []).length === 0) {
         toast.error(`No tracks found for "${query}"`)
       }
     } catch (err) {
       toast.error(err.message || 'Search failed. Is Django running?')
       setResults([])
+      setTotalCount(0)
     } finally {
       setLoading(false)
     }
   }
+
+  // ── Load More handler ─────────────────────────────────────
+  const handleLoadMore = async () => {
+    if (loadingMore || !currentQuery) return
+    setLoadingMore(true)
+    try {
+      const data = await searchTracks(currentQuery, results.length, aiPrompt)
+      const newResults = data.results || []
+      if (newResults.length === 0) {
+        toast('No more results', { icon: '📭' })
+      } else {
+        setResults(prev => [...prev, ...newResults])
+        setTotalCount(data.total_count || totalCount)
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to load more results.')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  const hasMore = activeMode === 'search' && results.length < totalCount
 
   // ── Mood handler ──────────────────────────────────────────
   const handleMoodSelect = async (mood) => {
     setMoodLoading(true)
     setSearched(true)
     setActiveMode('mood')
+    setCurrentQuery('')
+    setTotalCount(0)
     try {
       const data = await getRecommendationsByMood(mood, 10)
       setResults(data.recommendations || [])
@@ -143,7 +176,7 @@ export default function Home() {
       </div>
 
       {/* ── Results Section ───────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-6 py-10 pb-20">
+      <div className="max-w-7xl mx-auto px-6 py-10 pb-32">
 
         {(loading || moodLoading) && (
           <LoadingSpinner message={
@@ -162,21 +195,56 @@ export default function Home() {
 
         {!loading && !moodLoading && results.length > 0 && (
           <>
-            <h2 className="text-white text-xl font-bold mb-6">
+            <h2 className="text-white text-xl font-bold mb-2">
               {activeMode === 'mood' ? '🎭 Mood Recommendations' : '🔍 Search Results'}
               <span className="text-gray-500 text-sm font-normal ml-2">
                 — click a track to get more like it
               </span>
             </h2>
+
+            {/* Show count for search */}
+            {activeMode === 'search' && totalCount > 0 && (
+              <p className="text-gray-600 text-xs mb-6">
+                Showing {results.length} of {totalCount} results
+              </p>
+            )}
+
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {results.map((track, i) => (
                 <TrackCard
-                  key={i}
+                  key={`${track.track_name}-${track.artists}-${i}`}
                   track={track}
                   onRecommend={handleRecommend}
+                  trackList={results}
                 />
               ))}
             </div>
+
+            {/* ── Load More Button ─────────────────────────── */}
+            {hasMore && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="group flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-green-500/30 text-gray-300 hover:text-green-400 font-semibold px-8 py-3 rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-wait"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={16} className="group-hover:translate-y-0.5 transition-transform" />
+                      Load More Results
+                      <span className="text-gray-600 text-xs ml-1">
+                        ({totalCount - results.length} remaining)
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </>
         )}
 

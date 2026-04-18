@@ -65,13 +65,13 @@ def _load_model():
     if _df is not None and _feature_matrix is not None:
         return _df, _feature_matrix
 
-    print("🔄 Loading ML model...")
+    print("[LOADING] Loading ML model...")
     _df = load_data()
 
     scaler = MinMaxScaler()
     _feature_matrix = scaler.fit_transform(get_feature_matrix(_df))
 
-    print("✅ ML model ready.")
+    print("[OK] ML model ready.")
     return _df, _feature_matrix
 
 def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
@@ -101,7 +101,7 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
         input_genre = input_track.get('track_genre', 'Unknown')
         input_group = get_genre_group(input_genre)
 
-        print(f"🎵 Input: {track_name} | Genre: {input_genre} | Group: {input_group}")
+        print(f"[INPUT] {track_name} | Genre: {input_genre} | Group: {input_group}")
 
         # Compute similarity scores
         scores = cosine_similarity(
@@ -118,9 +118,8 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
         # Sort by similarity descending
         scored.sort(key=lambda x: x[1], reverse=True)
 
-        # Apply AI prompt filter
-        if ai_prompt:
-            scored = _apply_prompt_filter(df, scored, ai_prompt)
+        # Note: AI prompt filtering is now handled by Gemini in views.py
+        # When prompt is present, we fetch more results for Gemini to filter from
 
         # ── STRICT Language/Region Filter ──────────────────
         # Step 1: Exact same genre (strictest)
@@ -136,16 +135,16 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
             and df.iloc[i].get('track_genre', '') != input_genre
         ]
 
-        print(f"✅ Exact genre matches: {len(exact_genre)}")
-        print(f"✅ Same group matches: {len(same_group)}")
+        print(f"[OK] Exact genre matches: {len(exact_genre)}")
+        print(f"[OK] Same group matches: {len(same_group)}")
 
         # Use exact genre first — never mix!
         if len(exact_genre) >= 5:
             filtered = exact_genre
-            print(f"🎯 Using EXACT genre: {input_genre}")
+            print(f"[MATCH] Using EXACT genre: {input_genre}")
         elif len(exact_genre) + len(same_group) >= 5:
             filtered = exact_genre + same_group
-            print(f"🎯 Using exact + group: {input_group}")
+            print(f"[MATCH] Using exact + group: {input_group}")
         else:
             # Very rare genre — use all but sort by group match first
             filtered = [
@@ -155,12 +154,12 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
                 for i, s in scored
             ]
             filtered.sort(key=lambda x: x[1], reverse=True)
-            print(f"⚠️ Rare genre, boosting same group")
+            print(f"[WARN] Rare genre, boosting same group")
 
         # ── Flexible count ──────────────────────────────────
         THRESHOLD   = 0.65
         MIN_RESULTS = 5
-        MAX_RESULTS = 10
+        MAX_RESULTS = 20 if ai_prompt else 10  # More results when AI prompt needs filtering
 
         strong = [(i, s) for i, s in filtered if s >= THRESHOLD]
 
@@ -169,7 +168,7 @@ def get_recommendations(track_name, artist_name=None, n=10, ai_prompt=None):
         else:
             final = filtered[:MIN_RESULTS]
 
-        print(f"✅ Final: {len(final)} recommendations")
+        print(f"[OK] Final: {len(final)} recommendations")
 
         # Build result
         recommendations = []

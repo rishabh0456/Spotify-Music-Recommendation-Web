@@ -42,7 +42,7 @@ def load_data():
     df['tempo'] = (df['tempo'] - df['tempo'].min()) / \
                   (df['tempo'].max() - df['tempo'].min())
 
-    print(f"✅ Dataset loaded: {len(df)} tracks ready.")
+    print(f"[OK] Dataset loaded: {len(df)} tracks ready.")
     return df
 
 
@@ -53,15 +53,29 @@ def get_feature_matrix(df):
     return df[FEATURE_COLUMNS].values
 
 
-def search_tracks(df, query):
+def search_tracks(df, query, offset=0, limit=10):
     """
     Search tracks by name or artist.
-    Returns top 10 matching results.
+    Returns (total_count, results) with offset-based pagination.
     """
     query = query.lower().strip()
     mask = (
         df['track_name'].str.lower().str.contains(query, na=False) |
         df['artists'].str.lower().str.contains(query, na=False)
     )
-    results = df[mask][['track_name', 'artists', 'track_genre']].head(10)
-    return results.to_dict(orient='records')
+    matched = df[mask]
+    total_count = len(matched)
+
+    # Paginate
+    page = matched.iloc[offset:offset + limit]
+
+    columns = ['track_name', 'artists', 'track_genre',
+               'energy', 'danceability', 'valence', 'popularity']
+    available = [c for c in columns if c in page.columns]
+    results = page[available].copy()
+
+    # Rename for API consistency
+    if 'track_genre' in results.columns:
+        results = results.rename(columns={'track_genre': 'genre'})
+
+    return total_count, results.to_dict(orient='records')

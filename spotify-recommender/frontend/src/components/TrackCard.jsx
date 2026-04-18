@@ -1,19 +1,19 @@
 import { Play, Pause, ExternalLink, Music } from 'lucide-react'
 import { usePlayer } from '../context/PlayerContext'
 
-export default function TrackCard({ track, onRecommend, isInput = false }) {
+export default function TrackCard({ track, onRecommend, isInput = false, trackList = null }) {
   const { playTrack, currentTrack, isPlaying } = usePlayer()
 
   const isCurrentTrack = currentTrack?.track_name === track.track_name
   const isThisPlaying  = isCurrentTrack && isPlaying
 
-  // YAHAN FIX KIYA HAI: ab dono check honge (preview_url ya youtube_id)
+  // Check if playable (preview_url or youtube_id)
   const canPlay = track.preview_url || track.youtube_id
 
   const handlePlay = (e) => {
     e.stopPropagation()
-    if (!canPlay) return // Agar dono nahi hain tabhi rukega
-    playTrack(track)
+    if (!canPlay) return
+    playTrack(track, trackList)
   }
 
   return (

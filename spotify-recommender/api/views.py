@@ -4,6 +4,7 @@ from rest_framework import status
 from ml.recommender import get_recommendations, get_recommendations_by_features
 from ml.data_loader import load_data, search_tracks
 from api.spotify import get_track_details, enrich_recommendations
+from api.gemini_ai import filter_with_prompt
 from api.db import get_db
 
 
@@ -37,6 +38,12 @@ def health_check(request):
 @api_view(['GET'])
 def search(request):
     query = request.GET.get('q', '').strip()
+    try:
+        offset = int(request.GET.get('offset', 0))
+    except ValueError:
+        offset = 0
+        
+    ai_prompt = request.GET.get('prompt', '').strip() or None
 
     if not query:
         return error_response('Search query "q" is required.')
@@ -46,18 +53,26 @@ def search(request):
 
     try:
         df = load_data()
-        results = search_tracks(df, query)
+        limit = 30 if ai_prompt else 10
+        total_count, results = search_tracks(df, query, offset=offset, limit=limit)
 
-        if not results:
+        if total_count == 0:
             return error_response(
                 f'No tracks found for "{query}". Try a different search.',
                 status.HTTP_404_NOT_FOUND
             )
+            
+        if ai_prompt:
+            results = filter_with_prompt(results, ai_prompt)
+            results = results[:10]  # Cap back to 10
+            
+        enriched_results = enrich_recommendations(results)
 
         return success_response({
             'query':   query,
-            'count':   len(results),
-            'results': results
+            'count':   len(enriched_results),
+            'total_count': total_count,
+            'results': enriched_results
         })
 
     except Exception as e:
@@ -97,6 +112,14 @@ def recommend(request):
 
         if use_spotify:
             recommendations = enrich_recommendations(recommendations)
+
+        # ── Gemini AI filtering (if prompt provided) ──
+        if ai_prompt:
+            recommendations = filter_with_prompt(
+                recommendations, ai_prompt,
+                track_name=track_name,
+                artist_name=artist_name
+            )
 
         try:
             db = get_db()

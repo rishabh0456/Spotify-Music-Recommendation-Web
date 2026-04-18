@@ -27,8 +27,12 @@ api.interceptors.response.use(
   }
 )
 
-export const searchTracks = async (query) => {
-  const res = await api.get(`/search/?q=${encodeURIComponent(query)}`)
+export const searchTracks = async (query, offset = 0, prompt = null) => {
+  let url = `/search/?q=${encodeURIComponent(query)}&offset=${offset}`
+  if (prompt) {
+    url += `&prompt=${encodeURIComponent(prompt)}`
+  }
+  const res = await api.get(url)
   return res.data.data
 }
 

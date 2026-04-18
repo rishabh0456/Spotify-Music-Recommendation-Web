@@ -46,6 +46,6 @@ def get_youtube_id(track_name, artist_name):
             return yt_id
             
     except Exception as e:
-        print(f"❌ YouTube Fetch Error: {e}")
+        print(f"[ERROR] YouTube Fetch Error: {e}")
         
     return None

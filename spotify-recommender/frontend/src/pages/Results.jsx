@@ -144,6 +144,7 @@ export default function Results() {
                   key={i}
                   track={track}
                   onRecommend={handleRecommend}
+                  trackList={recommendations}
                 />
               ))}
             </div>
