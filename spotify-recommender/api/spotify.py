@@ -11,12 +11,7 @@ def get_track_details(track_name, artist_name=None):
 
 
 def enrich_single_track(track):
-    """
-    YouTube se sab kuch lega:
-    - youtube_id for playback
-    - YouTube thumbnail for album art
-    No Spotify, no 403, no timeout!
-    """
+    
     try:
         yt_id = get_youtube_id(
             track['track_name'],
@@ -24,7 +19,6 @@ def enrich_single_track(track):
         )
         track['youtube_id'] = yt_id
 
-        # YouTube thumbnail as album art — instant, free!
         if yt_id:
             track['album_art'] = f"https://img.youtube.com/vi/{yt_id}/mqdefault.jpg"
         else:
@@ -34,7 +28,6 @@ def enrich_single_track(track):
         track['youtube_id'] = None
         track['album_art']  = None
 
-    # Remove Spotify fields
     track['preview_url'] = None
     track['spotify_url'] = None
     track['album']       = None
